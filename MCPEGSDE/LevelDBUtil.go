@@ -8,13 +8,13 @@ import (
 )
 
 type MCBEWorld struct {
-	ldb  *leveldb.DB
-	path string
+	Ldb  *leveldb.DB
+	Path string
 }
 
-func OpenMCBEWorld(path string) (*MCBEWorld, error) {
-	world := MCBEWorld{nil, path}
-	var dbPath = path + "/db"
+func OpenMCBEWorld(Path string) (*MCBEWorld, error) {
+	world := MCBEWorld{nil, Path}
+	var dbPath = Path + "/db"
 
 	fileInfo, err := os.Stat(dbPath)
 
@@ -28,10 +28,10 @@ func OpenMCBEWorld(path string) (*MCBEWorld, error) {
 		return &world, errors.New("LevelDB database does not exist. This must be ran on a valid MCBE world directory.")
 	}
 
-	world.ldb, err = leveldb.OpenFile(dbPath, nil)
+	world.Ldb, err = leveldb.OpenFile(dbPath, nil)
 	if err != nil {
-		if world.ldb != nil {
-			_ = world.ldb.Close()
+		if world.Ldb != nil {
+			_ = world.Ldb.Close()
 		}
 		return &world, err
 	}
@@ -39,11 +39,11 @@ func OpenMCBEWorld(path string) (*MCBEWorld, error) {
 }
 
 func (w *MCBEWorld) Close() error {
-	return w.ldb.Close()
+	return w.Ldb.Close()
 }
 
 func (w *MCBEWorld) FilePath() string {
-	return w.path
+	return w.Path
 }
 
 // GetKeys returns all keys in the LevelDB database as a [][]byte
@@ -51,7 +51,7 @@ func (w *MCBEWorld) FilePath() string {
 // with caution.
 func (w *MCBEWorld) GetKeys() ([][]byte, error) {
 	keylist := [][]byte{}
-	iter := w.ldb.NewIterator(nil, nil)
+	iter := w.Ldb.NewIterator(nil, nil)
 	for iter.Next() {
 		key := iter.Key()
 		tmp := make([]byte, len(key))
@@ -67,7 +67,7 @@ func (w *MCBEWorld) GetKeys() ([][]byte, error) {
 }
 
 func (w *MCBEWorld) GetFromKey(key []byte) ([]byte, error) {
-	temp, err := w.ldb.Get(key, nil)
+	temp, err := w.Ldb.Get(key, nil)
 
 	val := make([]byte, len(temp))
 	copy(val, temp)
@@ -75,9 +75,9 @@ func (w *MCBEWorld) GetFromKey(key []byte) ([]byte, error) {
 }
 
 func (w *MCBEWorld) GetFromKeyUnsafe(key []byte) ([]byte, error) {
-	return w.ldb.Get(key, nil)
+	return w.Ldb.Get(key, nil)
 }
 
 func (w *MCBEWorld) PutFromKey(key []byte, value []byte) error {
-	return w.ldb.Put(key, value, nil)
+	return w.Ldb.Put(key, value, nil)
 }
