@@ -22,7 +22,7 @@ const (
 	BiomeState          uint8 = 53  // 0x35 (5)
 	FinalizedState      uint8 = 54  // 0x36 (6)
 	BorderBlocks        uint8 = 56  // Education Edition Feature
-	HardCodedSpawnAreas uint8 = 57  // 0x39 (9)
+	HardCodedSpawnAreas uint8 = 57  // 0x39 (8)
 	Checksums           uint8 = 59  // 0x3b (;)
 	VersionOld          uint8 = 118 // 0x76 (v)
 )
