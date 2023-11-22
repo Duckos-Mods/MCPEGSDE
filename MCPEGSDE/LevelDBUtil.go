@@ -12,6 +12,9 @@ type MCBEWorld struct {
 	Path string
 }
 
+// OpenMCBEWorld opens a Minecraft Bedrock Edition world at the
+// specified path. Then returns a pointer to a MCBEWorld struct
+// containing the LevelDB database and the path to the world.
 func OpenMCBEWorld(Path string) (*MCBEWorld, error) {
 	world := MCBEWorld{nil, Path}
 	var dbPath = Path + "/db"
@@ -38,10 +41,12 @@ func OpenMCBEWorld(Path string) (*MCBEWorld, error) {
 	return &world, nil
 }
 
+// Close closes the LevelDB database.
 func (w *MCBEWorld) Close() error {
 	return w.Ldb.Close()
 }
 
+// FilePath returns the path to the Minecraft Bedrock Edition world.
 func (w *MCBEWorld) FilePath() string {
 	return w.Path
 }
@@ -66,6 +71,13 @@ func (w *MCBEWorld) GetKeys() ([][]byte, error) {
 	return keylist, nil
 }
 
+// GetFromKey returns the value from the LevelDB database at the
+// specified key. This is a convenience function that wraps the
+// LevelDB Get function. This function copies the data from the
+// LevelDB database, so the returned []byte slice is a copy of the
+// LevelDB database. This means that the returned []byte slice can be
+// modified. Then use the PutFromKey function to write the modified
+// data back to the LevelDB database.
 func (w *MCBEWorld) GetFromKey(key []byte) ([]byte, error) {
 	temp, err := w.Ldb.Get(key, nil)
 
@@ -74,10 +86,21 @@ func (w *MCBEWorld) GetFromKey(key []byte) ([]byte, error) {
 	return val, err
 }
 
+// GetFromKeyUnsafe returns the value from the LevelDB database at the
+// specified key. This is a convenience function that wraps the
+// LevelDB Get function. This function does not copy the data from the
+// LevelDB database, so the returned []byte slice is a reference to the
+// LevelDB database. This means that the returned []byte slice should
+// not be modified.
+// Can error if the LevelDB Get function errors.
 func (w *MCBEWorld) GetFromKeyUnsafe(key []byte) ([]byte, error) {
 	return w.Ldb.Get(key, nil)
 }
 
+// PutFromKey puts a value into the LevelDB database at the specified
+// key. This is a convenience function that wraps the LevelDB Put
+// function.
+// Can error if the LevelDB Put function errors.
 func (w *MCBEWorld) PutFromKey(key []byte, value []byte) error {
 	return w.Ldb.Put(key, value, nil)
 }

@@ -1,5 +1,10 @@
 package mcpegsde
 
+import (
+	"fmt"
+	"strconv"
+)
+
 // Dim enum for dimension
 const (
 	Overworld = iota
@@ -27,12 +32,34 @@ const (
 	VersionOld          uint8 = 118 // 0x76 (v)
 )
 
+// A const array of all the key types used for quick lookup
+var (
+	KeyTypeArray = [16]uint8{
+		Data3D,
+		VersionNew,
+		Data2D,
+		Data2DLegacy,
+		SubChunkTerrain,
+		LegacyTerrain,
+		BlockEntity,
+		Entity,
+		PendingTicks,
+		BlockExtraData,
+		BiomeState,
+		FinalizedState,
+		BorderBlocks,
+		HardCodedSpawnAreas,
+		Checksums,
+		VersionOld,
+	}
+)
+
 type LDBKey struct {
 	Dimension int32
 	X         int32
 	Z         int32
 	Type      uint8
-	Y         uint8
+	Y         int8
 }
 
 func (k *LDBKey) Key() []byte {
@@ -43,6 +70,54 @@ func (k *LDBKey) Key() []byte {
 		returnKey = append(returnKey, Int32ToBytes(k.Dimension)...)
 	}
 	returnKey = append(returnKey, k.Type)
-	returnKey = append(returnKey, k.Y)
+	// copy the raw bits in the int8 over to the byte
+	returnKey = append(returnKey, byte(k.Y))
 	return returnKey
+}
+
+func (k *LDBKey) KeyString() string {
+	if k.Dimension == Overworld {
+		return fmt.Sprintf("%032s | %032s | %08s | %08s", strconv.FormatInt(int64(k.X), 2), strconv.FormatInt(int64(k.Z), 2), strconv.FormatInt(int64(k.Type), 2), strconv.FormatInt(int64(k.Y), 2))
+	} else {
+		return fmt.Sprintf("%032s | %032s | %032s | %08s | %08s", strconv.FormatInt(int64(k.X), 2), strconv.FormatInt(int64(k.Z), 2), strconv.FormatInt(int64(k.Dimension), 2), strconv.FormatInt(int64(k.Type), 2), strconv.FormatInt(int64(k.Y), 2))
+	}
+}
+
+func KeyTypeToString(key uint8) string {
+	switch key {
+	case Data3D:
+		return "Data3D"
+	case VersionNew:
+		return "VersionNew"
+	case Data2D:
+		return "Data2D"
+	case Data2DLegacy:
+		return "Data2DLegacy"
+	case SubChunkTerrain:
+		return "SubChunkTerrain"
+	case LegacyTerrain:
+		return "LegacyTerrain"
+	case BlockEntity:
+		return "BlockEntity"
+	case Entity:
+		return "Entity"
+	case PendingTicks:
+		return "PendingTicks"
+	case BlockExtraData:
+		return "BlockExtraData"
+	case BiomeState:
+		return "BiomeState"
+	case FinalizedState:
+		return "FinalizedState"
+	case BorderBlocks:
+		return "BorderBlocks"
+	case HardCodedSpawnAreas:
+		return "HardCodedSpawnAreas"
+	case Checksums:
+		return "Checksums"
+	case VersionOld:
+		return "VersionOld"
+	default:
+		return "Unknown"
+	}
 }
