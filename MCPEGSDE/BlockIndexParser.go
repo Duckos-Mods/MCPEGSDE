@@ -1,5 +1,10 @@
 package mcpegsde
 
+import (
+	"reflect"
+	"unsafe"
+)
+
 const (
 	Palleted1  = 1  // 32 blocks per word
 	Palleted2  = 2  // 16 blocks per word
@@ -13,93 +18,73 @@ const (
 
 // Word is a uint32
 
-func GetBlocksFromWordP1(word uint32) []uint16 {
-	var returnBlocks = make([]uint16, 32)
-	for i := 0; i < 32; i++ {
-		returnBlocks[i] = uint16(word >> uint(i) & 0x01)
-	}
-	return returnBlocks
+func calculateBlocksPerWord(bitsPerBlock uint8) int {
+	return int(32 / bitsPerBlock)
 }
 
-func GetBlocksFromWordP2(word uint32) []uint16 {
-	var returnBlocks = make([]uint16, 16)
-	for i := 0; i < 16; i++ {
-		returnBlocks[i] = uint16(word >> uint(i) & 0x03)
-	}
-	return returnBlocks
+func getMask(blocksPerWord uint16) uint16 {
+	// Calculate the number of bits to set in the mask
+	numBitsSet := (1 << blocksPerWord) - 1
+
+	// Generate the mask by setting the desired number of bits
+	mask := uint16(numBitsSet)
+
+	return mask
 }
 
-func GetBlocksFromWordP3(word uint32) []uint16 {
-	var returnBlocks = make([]uint16, 10)
-	for i := 0; i < 10; i++ {
-		returnBlocks[i] = uint16(word >> uint(i) & 0x07)
-	}
-	return returnBlocks
+func maskWordToBytes(word uint32) (byte, byte, byte, byte) {
+	var LeftByte = byte(word >> 24)
+	var MidLeft = byte(word >> 16)
+	var MidRight = byte(word >> 8)
+	var RightByte = byte(word)
+	return LeftByte, MidLeft, MidRight, RightByte
 }
 
-func GetBlocksFromWordP4(word uint32) []uint16 {
-	var returnBlocks = make([]uint16, 8)
-	for i := 0; i < 8; i++ {
-		returnBlocks[i] = uint16(word >> uint(i) & 0x0f)
-	}
-	return returnBlocks
+func maskBytesToWord(LeftByte, MidLeft, MidRight, RightByte byte) uint32 {
+	var returnWord uint32
+	returnWord |= uint32(LeftByte) << 24
+	returnWord |= uint32(MidLeft) << 16
+	returnWord |= uint32(MidRight) << 8
+	returnWord |= uint32(RightByte)
+	return returnWord
 }
 
-func GetBlocksFromWordP5(word uint32) []uint16 {
-	var returnBlocks = make([]uint16, 6)
-	for i := 0; i < 6; i++ {
-		returnBlocks[i] = uint16(word >> uint(i) & 0x1f)
-	}
-	return returnBlocks
-}
-
-func GetBlocksFromWordP6(word uint32) []uint16 {
-	var returnBlocks = make([]uint16, 5)
-	for i := 0; i < 5; i++ {
-		returnBlocks[i] = uint16(word >> uint(i) & 0x3f)
-	}
-	return returnBlocks
-}
-
-func GetBlocksFromWordP8(word uint32) []uint16 {
-	var returnBlocks = make([]uint16, 4)
-	for i := 0; i < 4; i++ {
-		returnBlocks[i] = uint16(word >> uint(i) & 0xff)
-	}
-	return returnBlocks
-}
-
-func GetBlocksFromWordP16(word uint32) []uint16 {
-	var returnBlocks = make([]uint16, 2)
-	for i := 0; i < 2; i++ {
-		returnBlocks[i] = uint16(word >> uint(i) & 0xffff)
-	}
-	return returnBlocks
-}
-
-func GetBlocksFromBytes(SubChunk *LevelSubChunk, rawData []byte) {
-	// cast the raw data to a uint32 array
-	var rawWords = make([]uint32, len(rawData)/4)
-	for i := 0; i < len(rawData); i += 4 {
-		switch SubChunk.BitsPerBlock {
-		case Palleted1:
-			SubChunk.BlkData = GetBlocksFromWordP1(rawWords[i])
-		case Palleted2:
-			SubChunk.BlkData = GetBlocksFromWordP2(rawWords[i])
-		case Palleted3:
-			SubChunk.BlkData = GetBlocksFromWordP3(rawWords[i])
-		case Palleted4:
-			SubChunk.BlkData = GetBlocksFromWordP4(rawWords[i])
-		case Palleted5:
-			SubChunk.BlkData = GetBlocksFromWordP5(rawWords[i])
-		case Palleted6:
-			SubChunk.BlkData = GetBlocksFromWordP6(rawWords[i])
-		case Palleted8:
-			SubChunk.BlkData = GetBlocksFromWordP8(rawWords[i])
-		case Palleted16:
-			SubChunk.BlkData = GetBlocksFromWordP16(rawWords[i])
-		default:
-			panic("What the fuck is this pallet type")
+func unpackBlocksPN(blocksPerWord int, rawData []byte) []uint16 {
+	var returnData []uint16
+	for i := 0; i < len(rawData)/4; i++ {
+		var word = maskBytesToWord(rawData[i*4], rawData[i*4+1], rawData[i*4+2], rawData[i*4+3])
+		for b := 0; b < blocksPerWord; b++ {
+			returnData = append(returnData, uint16(word>>b&uint32(getMask(uint16(blocksPerWord)))))
 		}
 	}
+	return returnData
+}
+
+// This function wraps some calls to internal functions so you dont have to do it yourself
+func GetBlocksFromBytes(SubChunk *LevelSubChunk, rawData []byte) {
+	SubChunk.BlkData = unpackBlocksPN(calculateBlocksPerWord(SubChunk.BitsPerBlock), rawData)
+}
+
+func packBlocksPN(SubChunk *LevelSubChunk, blocksPerWord int) []byte {
+
+	var ReturnPallet = make([]uint32, len(SubChunk.BlkData)/2)
+	for i := 0; i < len(SubChunk.BlkData)/blocksPerWord; i++ {
+		var CorrectIndex = i * 32
+		var word uint32
+		for b := 0; b < blocksPerWord; b++ {
+			word = uint32(SubChunk.BlkData[CorrectIndex+b] >> b & getMask(uint16(blocksPerWord)))
+		}
+		ReturnPallet[i] = word
+	}
+	var byteslice []byte
+	header := *(*reflect.SliceHeader)(unsafe.Pointer(&ReturnPallet))
+	header.Len *= 4
+	header.Cap *= 4
+	byteslice = *(*[]byte)(unsafe.Pointer(&header))
+	return byteslice
+}
+
+// This function wraps some calls to internal functions so you dont have to do it yourself
+func PackBlocksFromBlockData(SubChunk *LevelSubChunk) []byte {
+	return packBlocksPN(SubChunk, calculateBlocksPerWord(SubChunk.BitsPerBlock))
 }
