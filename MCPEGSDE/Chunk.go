@@ -12,22 +12,19 @@ type LevelSubChunk struct {
 }
 
 type LevelChunk struct {
-	X, Z      int32
-	SubChunks []LevelSubChunk
-	Dimension int32
+	X, Z         int32
+	SubChunks    [384 / 16]LevelSubChunk
+	Dimension    int32
+	ChunkVersion uint8
 }
 
 // GetSubChunk returns a pointer to the subchunk at Y, or nil if it doesn't exist
-// TODO: This is probably not the best way to do this. I'm not sure what the best way to do this is.
-// Most likely, I'll have to do some sort of sort then just jump to the correct subchunk.
-// But im lazy and this works for now.
 func (c *LevelChunk) GetSubChunk(Y int8) *LevelSubChunk {
-	for _, subchunk := range c.SubChunks {
-		if subchunk.Y == Y {
-			return &subchunk
-		}
+	// Check if Y is less than -4 or greater than 20 (the range of subchunks) and return nil if it is
+	if Y < -4 || Y > 19 {
+		return nil
 	}
-	return nil
+	return &c.SubChunks[Y+4]
 }
 
 func (c *LevelSubChunk) SampleNextBlockIndexBassedOnBitsPerBlock(rawChunkData []byte, index int) uint16 {
@@ -51,7 +48,9 @@ func ConvertLDBEntryToLevelSubChunk(rawChunkData []byte) (*LevelSubChunk, error)
 	subChunk.PalletType = rawChunkData[3] & 0x01                // we only want the first bit
 	subChunk.BitsPerBlock = (rawChunkData[3] & 0b11111110) >> 1 // we want all bits except the first one
 	// Write the block index data to the subchunk
-	WriteBitsToIndexMap(&subChunk.BlkData, rawChunkData[4:4096/4], subChunk.BitsPerBlock)
+
+	// This code sucks and i hate it. It needs to burn in hell.
+	// WriteBitsToIndexMap(&subChunk.BlkData, rawChunkData[4:4096/4], subChunk.BitsPerBlock)
 
 	return &subChunk, nil
 }
