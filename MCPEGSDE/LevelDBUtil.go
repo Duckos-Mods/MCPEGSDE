@@ -104,3 +104,11 @@ func (w *MCBEWorld) GetFromKeyUnsafe(key []byte) ([]byte, error) {
 func (w *MCBEWorld) PutFromKey(key []byte, value []byte) error {
 	return w.Ldb.Put(key, value, nil)
 }
+
+func (w *MCBEWorld) GetChunkKey(x, z int32) []byte {
+	var returnKey []byte
+	returnKey = append(returnKey, Int32ToBytes(x)...)
+	returnKey = append(returnKey, Int32ToBytes(z)...)
+	returnKey = append(returnKey, 0x2C)
+	return returnKey
+}
