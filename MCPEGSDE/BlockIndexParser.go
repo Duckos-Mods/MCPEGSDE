@@ -76,6 +76,11 @@ func packBlocksPN(SubChunk *LevelSubChunk, blocksPerWord int) []byte {
 		}
 		ReturnPallet[i] = word
 	}
+
+	// The code below is a deamon from hell and i hate it.
+	// It does work though so i guess thats good.
+	// Just dont look at it too hard or it will break.
+	// It is a hacky way to convert a uint32 slice to a byte slice.
 	var byteslice []byte
 	header := *(*reflect.SliceHeader)(unsafe.Pointer(&ReturnPallet))
 	header.Len *= 4
