@@ -61,3 +61,43 @@ func BytesToInt64[T uiint64](buffer []byte) T {
 func BytesToInt8[T uiint8](buffer []byte) T {
 	return T(buffer[0])
 }
+
+func Int32ToBytesBigEndian[T uiint32](value T) []byte {
+	var buffer = make([]byte, 4)
+	binary.BigEndian.PutUint32(buffer, uint32(value))
+	return buffer
+}
+
+func Int16ToBytesBigEndian[T uiint16](value T) []byte {
+	var buffer = make([]byte, 2)
+	binary.BigEndian.PutUint16(buffer, uint16(value))
+	return buffer
+}
+
+func Int64ToBytesBigEndian[T uiint64](value T) []byte {
+	var buffer = make([]byte, 8)
+	binary.BigEndian.PutUint64(buffer, uint64(value))
+	return buffer
+}
+
+func Int8ToBytesBigEndian[T uiint8](value T) []byte {
+	var buffer = make([]byte, 1)
+	buffer[0] = uint8(value)
+	return buffer
+}
+
+func BytesToInt32BigEndian[T uiint32](buffer []byte) T {
+	return T(binary.BigEndian.Uint32(buffer))
+}
+
+func BytesToInt16BigEndian[T uiint16](buffer []byte) T {
+	return T(binary.BigEndian.Uint16(buffer))
+}
+
+func BytesToInt64BigEndian[T uiint64](buffer []byte) T {
+	return T(binary.BigEndian.Uint64(buffer))
+}
+
+func BytesToInt8BigEndian[T uiint8](buffer []byte) T {
+	return T(buffer[0])
+}
