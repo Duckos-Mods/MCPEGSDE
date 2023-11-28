@@ -22,13 +22,13 @@ func OpenMCBEWorld(Path string) (*MCBEWorld, error) {
 	fileInfo, err := os.Stat(dbPath)
 
 	if os.IsNotExist(err) {
-		return &world, errors.New("LevelDB database does not exist. This must be ran on a valid MCBE world directory.")
+		return &world, errors.New("LevelDB database does not exist. This must be ran on a valid MCBE world directory")
 	}
 	if err != nil {
 		return &world, err
 	}
 	if !fileInfo.IsDir() {
-		return &world, errors.New("LevelDB database does not exist. This must be ran on a valid MCBE world directory.")
+		return &world, errors.New("LevelDB database does not exist. This must be ran on a valid MCBE world directory")
 	}
 
 	world.Ldb, err = leveldb.OpenFile(dbPath, nil)
