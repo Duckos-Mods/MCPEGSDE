@@ -22,9 +22,9 @@ func calculateBlocksPerWord(bitsPerBlock uint8) int {
 	return int(32 / bitsPerBlock)
 }
 
-func getMask(blocksPerWord uint16) uint16 {
+func getMask(bitsPerBlock uint16) uint16 {
 	// Calculate the number of bits to set in the mask
-	numBitsSet := (1 << blocksPerWord) - 1
+	numBitsSet := (1 << bitsPerBlock) - 1
 
 	// Generate the mask by setting the desired number of bits
 	mask := uint16(numBitsSet)
@@ -49,12 +49,14 @@ func maskBytesToWord(LeftByte, MidLeft, MidRight, RightByte byte) uint32 {
 	return returnWord
 }
 
-func unpackBlocksPN(blocksPerWord int, rawData []byte) []uint16 {
-	var returnData []uint16
+func unpackBlocksPN(blocksPerWord int, rawData []byte, bitsPerBlock uint16) []uint16 {
+	var returnData []uint16 = make([]uint16, len(rawData)/4*blocksPerWord)
+	var trueIndex = 0
 	for i := 0; i < len(rawData)/4; i++ {
 		var word = maskBytesToWord(rawData[i*4], rawData[i*4+1], rawData[i*4+2], rawData[i*4+3])
 		for b := 0; b < blocksPerWord; b++ {
-			returnData = append(returnData, uint16(word>>b&uint32(getMask(uint16(blocksPerWord)))))
+			returnData[trueIndex] = uint16(word >> b & uint32(getMask(uint16(bitsPerBlock))))
+			trueIndex++
 		}
 	}
 	return returnData
@@ -62,7 +64,7 @@ func unpackBlocksPN(blocksPerWord int, rawData []byte) []uint16 {
 
 // This function wraps some calls to internal functions so you dont have to do it yourself
 func GetBlocksFromBytes(SubChunk *LevelSubChunk, rawData []byte) {
-	SubChunk.BlkData = unpackBlocksPN(calculateBlocksPerWord(SubChunk.BitsPerBlock), rawData)
+	SubChunk.BlkData = unpackBlocksPN(calculateBlocksPerWord(SubChunk.BitsPerBlock), rawData, uint16(SubChunk.BitsPerBlock))
 }
 
 func packBlocksPN(SubChunk *LevelSubChunk, blocksPerWord int) []byte {
