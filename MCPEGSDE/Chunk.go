@@ -1,5 +1,7 @@
 package mcpegsde
 
+import "math"
+
 type LevelSubChunk struct {
 	Y                     int8
 	BlkData               []uint16 // We will use these as indices for the block palette
@@ -27,18 +29,6 @@ func (c *LevelChunk) GetSubChunk(Y int8) *LevelSubChunk {
 	return &c.SubChunks[Y+4]
 }
 
-func (c *LevelSubChunk) SampleNextBlockIndexBassedOnBitsPerBlock(rawChunkData []byte, index int) uint16 {
-	var returnIndex uint16
-	/*
-		We need to get the correct number of bits from the raw data.
-		The index is the index of the block in the subchunk.
-		We need to get the correct number of bits from the raw data.
-		i have no idea how to do this
-	*/
-
-	return returnIndex
-}
-
 func ConvertLDBEntryToLevelSubChunk(rawChunkData []byte) (*LevelSubChunk, error) {
 	var subChunk LevelSubChunk
 	subChunk.Y = int8(rawChunkData[2])
@@ -51,6 +41,10 @@ func ConvertLDBEntryToLevelSubChunk(rawChunkData []byte) (*LevelSubChunk, error)
 
 	// This code sucks and i hate it. It needs to burn in hell.
 	// WriteBitsToIndexMap(&subChunk.BlkData, rawChunkData[4:4096/4], subChunk.BitsPerBlock)
-
+	var blocksPerWord = calculateBlocksPerWord(subChunk.BitsPerBlock)
+	var wordCount = int(math.Ceil(float64(4096) / float64(blocksPerWord)))
+	subChunk.BlkData = unpackBlocksPN(blocksPerWord, rawChunkData[4:wordCount*4+4], uint16(subChunk.BitsPerBlock))
+	var palletData = rawChunkData[wordCount*4+4:]
+	ExtractBlockPallet(palletData, &subChunk)
 	return &subChunk, nil
 }
